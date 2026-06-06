@@ -76,6 +76,7 @@
       </div>
       <div class="stat-row" id="home-stats"></div>
       <button class="plan-link glass" id="home-plan" onclick="go('v-anchor')">🌙 <span>Set up your reasons for a tough moment</span><span class="chev">›</span></button>
+      <button class="plan-link glass" id="home-ask" onclick="askClaude()">✦ <span>Talk it through with Claude</span><span class="chev">›</span></button>
     </div>
     <nav class="tabs" data-tab="home"></nav>
   </section>
@@ -190,6 +191,20 @@
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- ============ ASK CLAUDE ============ -->
+  <section class="view flow" id="v-ask">
+    <button class="close-x" onclick="closeAsk()" aria-label="Close">✕</button>
+    <div class="flow-body">
+      <div class="eyebrow label-top">A second perspective</div>
+      <h2>Talk it through<br>with Claude</h2>
+      <p class="muted">We've drafted a message from your own patterns — your reasons, what tends to set you off, what's helped before. Read it, change anything that's off, then open it in Claude for a kind, judgment-free second opinion.</p>
+      <textarea class="ask-area" id="ask-text" spellcheck="false"></textarea>
+      <div class="ask-note" id="ask-hint">Nothing leaves your phone until you tap below and send it yourself.</div>
+      <button class="btn" onclick="openInClaude()">Open in Claude →</button>
+      <button class="btn ghost" onclick="copyPrompt()">Copy the message</button>
     </div>
   </section>
 

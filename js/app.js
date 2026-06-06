@@ -334,6 +334,9 @@ function renderInsights(){
         ${cells}
       </div></div>`;
 
+  // hand these patterns to an AI coach, prefilled
+  html += `<button class="plan-link glass ask-cta" onclick="askClaude()">✦ <span>Talk these patterns through with Claude</span><span class="chev">›</span></button>`;
+
   body.innerHTML = html;
 }
 
@@ -625,6 +628,106 @@ function showDone(kind){
 
 function confirmClose(){ stopWave(); go('v-home'); }
 window.confirmClose = confirmClose;
+
+/* ------------------------------------------------------------------ *
+ * Ask Claude — hand the user's own patterns to an AI coach.
+ * We build the message from state, show it for review/edit, and only
+ * open Claude when they tap. Nothing is sent automatically — the prompt
+ * carries personal recovery data, so review-before-send is deliberate.
+ * ------------------------------------------------------------------ */
+let askReturn = 'v-home';
+
+function topTriggers(n){
+  const c = {};
+  for (const s of state.sessions) for (const t of (s.triggers || [])) c[t] = (c[t] || 0) + 1;
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n).map(x => x[0]);
+}
+
+function topHelps(n){
+  const out = [];
+  for (const a of ACTIONS){
+    const used = state.sessions.filter(s => (s.actions || []).includes(a.id));
+    if (!used.length) continue;
+    const good = used.filter(s => s.outcome === 'good').length;
+    out.push({ t: a.t, rate: good / used.length, n: used.length });
+  }
+  out.sort((x, y) => y.rate - x.rate || y.n - x.n);
+  return out.slice(0, n).map(h => h.t.toLowerCase());
+}
+
+// Busiest day-of-week × 3-hour window across all sessions, as plain words.
+function peakWindow(){
+  if (state.sessions.length < 3) return null;
+  const grid = Array.from({ length: 7 }, () => new Array(8).fill(0));
+  let max = 0, mr = 0, mc = 0;
+  for (const s of state.sessions){
+    const d = new Date(s.ts);
+    const dow = (d.getDay() + 6) % 7;
+    const b = Math.floor(d.getHours() / 3);
+    grid[dow][b]++;
+    if (grid[dow][b] > max){ max = grid[dow][b]; mr = dow; mc = b; }
+  }
+  if (max < 2) return null;
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const parts = ['in the small hours','early morning','in the morning','late morning',
+                 'in the early afternoon','in the late afternoon','in the evening','late at night'];
+  return `${days[mr]}s ${parts[mc]}`;
+}
+
+function buildClaudePrompt(){
+  const habitLabels = (state.habits.length ? state.habits : ['food']).map(k => HABITS[k].label).join(', ');
+  const reasons = state.reasons.map(r => r.text.trim().replace(/\.$/, ''));
+  const trigs = topTriggers(3);
+  const helps = topHelps(3);
+  const peak = peakWindow();
+  const ridden = wavesRidden();
+  const wr = winRate();
+
+  const lines = [];
+  lines.push("I'm using a small app called Tide to ride out cravings in the moment instead of giving in, and I'd like your help thinking it through.");
+  lines.push('');
+  lines.push("Here's where I'm at:");
+  lines.push(`• What I'm working on: ${habitLabels}.`);
+  if (reasons.length) lines.push(`• Why it matters to me: ${reasons.join('; ')}.`);
+  if (peak)           lines.push(`• My urges tend to hit most ${peak}.`);
+  if (trigs.length)   lines.push(`• What usually sets them off: ${trigs.join(', ')}.`);
+  if (helps.length)   lines.push(`• What's helped me ride them out: ${helps.join(', ')}.`);
+  if (ridden)         lines.push(`• So far I've ridden out ${ridden} urge${ridden === 1 ? '' : 's'}${wr != null ? ` — about ${wr}% of the time without fully giving in` : ''}.`);
+  lines.push('');
+  lines.push('Could you be a kind, non-judgmental coach? Help me make sense of these patterns and suggest one or two small, concrete things to try the next time an urge hits. Please keep it warm and never shaming — a slip is just information, not a failure.');
+  return lines.join('\n');
+}
+
+function askClaude(){
+  const active = document.querySelector('.view.active');
+  askReturn = (active && VIEW_HASH[active.id]) ? active.id : 'v-home';
+  el('ask-text').value = buildClaudePrompt();
+  el('ask-hint').textContent = 'Nothing leaves your phone until you tap below and send it yourself.';
+  go('v-ask');
+}
+window.askClaude = askClaude;
+
+function closeAsk(){ go(askReturn); }
+window.closeAsk = closeAsk;
+
+function openInClaude(){
+  const text = el('ask-text').value.trim();
+  if (!text) return;
+  // claude.ai/new?q= opens a fresh chat prefilled; on mobile this hands off
+  // to the Claude app when it's installed, otherwise the browser.
+  window.open('https://claude.ai/new?q=' + encodeURIComponent(text), '_blank', 'noopener');
+}
+window.openInClaude = openInClaude;
+
+function copyPrompt(){
+  const ta = el('ask-text');
+  const done = () => { el('ask-hint').textContent = 'Copied. Paste it into Claude — or any coach you trust.'; };
+  const fallback = () => { try { ta.focus(); ta.select(); document.execCommand('copy'); done(); } catch (e) {} };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(done).catch(fallback);
+  } else { fallback(); }
+}
+window.copyPrompt = copyPrompt;
 
 /* ------------------------------------------------------------------ *
  * Sample data (for "just exploring")
