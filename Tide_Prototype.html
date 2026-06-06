@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tide — Interactive Prototype</title>
+<style>
+  :root{
+    --navy:#0B1F3A; --navy2:#102a4c; --teal:#2DD4BF; --teal-dim:#1c8f80;
+    --sand:#F5E6CA; --ink:#0B1F3A; --mist:#9fb3c8; --card:#ffffff;
+    --soft:#eef3f8; --danger:#e8896b; --ok:#2DD4BF;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    background:radial-gradient(1200px 800px at 50% -10%, #16335c, #081326 60%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    color:var(--ink); padding:32px 16px 60px;
+  }
+  .lead{color:#cfe0f0; text-align:center; max-width:560px; margin:0 auto 22px;}
+  .lead h1{font-size:26px; margin:0 0 6px; color:#fff; letter-spacing:.5px;}
+  .lead p{margin:0; font-size:14px; color:#9fb6d2;}
+  .stage{display:flex; gap:26px; flex-wrap:wrap; justify-content:center; align-items:flex-start;}
+
+  /* phone frame */
+  .phone{
+    width:330px; height:680px; background:#000; border-radius:46px;
+    padding:12px; box-shadow:0 30px 70px rgba(0,0,0,.55), 0 0 0 2px #2a2a2a;
+    position:relative; flex:0 0 auto;
+  }
+  .notch{position:absolute; top:14px; left:50%; transform:translateX(-50%); width:120px; height:26px; background:#000; border-radius:0 0 16px 16px; z-index:30;}
+  .screen{
+    position:absolute; inset:12px; border-radius:36px; overflow:hidden; background:var(--soft);
+  }
+  .view{position:absolute; inset:0; display:none; flex-direction:column; animation:fade .45s ease;}
+  .view.active{display:flex;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .statusbar{height:38px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 4px; font-size:12px; font-weight:600; color:var(--navy);}
+  .view.dark .statusbar{color:#dbe9ff;}
+
+  .scroll{flex:1; overflow-y:auto; padding:6px 20px 90px;}
+  .scroll::-webkit-scrollbar{display:none;}
+
+  /* tab bar */
+  .tabs{position:absolute; bottom:0; left:0; right:0; height:64px; background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px); border-top:1px solid #e2e9f1; display:flex; z-index:20;}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; color:#9aa9bd; cursor:pointer;}
+  .tab svg{width:22px; height:22px; stroke:#9aa9bd; fill:none; stroke-width:1.8;}
+  .tab.on{color:var(--teal-dim);} .tab.on svg{stroke:var(--teal-dim);}
+
+  h2.sc{font-size:22px; margin:8px 2px 2px; color:var(--navy);}
+  .sub{color:#7e8ea1; font-size:13px; margin:0 2px 16px;}
+
+  /* HOME */
+  .home{background:linear-gradient(180deg,#0B1F3A,#143a66 70%, #1a4a82); color:#eaf3ff;}
+  .home .statusbar{color:#cfe2ff;}
+  .home-inner{flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 22px 80px;}
+  .greet{align-self:flex-start; margin-top:4px;}
+  .greet .hi{font-size:13px; color:#9fc2ea;}
+  .greet .day{font-size:20px; font-weight:700; color:#fff;}
+  .urge-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;}
+  .urge-btn{
+    width:188px; height:188px; border-radius:50%; border:none; cursor:pointer; color:#04221d;
+    background:radial-gradient(circle at 50% 38%, #6df0db, #2DD4BF 55%, #1aa492);
+    box-shadow:0 0 0 10px rgba(45,212,191,.16), 0 0 0 24px rgba(45,212,191,.08), 0 18px 40px rgba(45,212,191,.35);
+    font-size:18px; font-weight:800; letter-spacing:.3px; line-height:1.25;
+    animation:pulse 3.4s ease-in-out infinite;
+  }
+  .urge-btn small{display:block; font-weight:600; font-size:11px; opacity:.7; margin-top:4px;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 10px rgba(45,212,191,.16),0 0 0 24px rgba(45,212,191,.06),0 18px 40px rgba(45,212,191,.3); transform:scale(1);} 50%{box-shadow:0 0 0 16px rgba(45,212,191,.20),0 0 0 36px rgba(45,212,191,.05),0 18px 46px rgba(45,212,191,.45); transform:scale(1.03);}}
+  .urge-cap{color:#bcd6f3; font-size:13px; text-align:center; max-width:200px;}
+  .stat-row{display:flex; gap:10px; width:100%;}
+  .stat{flex:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px; text-align:center;}
+  .stat b{display:block; font-size:21px; color:#fff;}
+  .stat span{font-size:10.5px; color:#a9c6e8;}
+  .plan-link{margin-top:14px; width:100%; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); color:#eaf3ff; border-radius:14px; padding:13px; font-size:13px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+
+  /* cards */
+  .card{background:#fff; border-radius:18px; padding:16px; margin-bottom:13px; box-shadow:0 6px 18px rgba(13,40,80,.06);}
+  .card h3{margin:0 0 4px; font-size:15px; color:var(--navy);}
+  .card p{margin:0; font-size:12.5px; color:#7e8ea1; line-height:1.5;}
+
+  /* URGE FLOW */
+  .flow{background:linear-gradient(180deg,#081428,#0c2547 60%,#103b6b);}
+  .flow .statusbar{color:#bcd6f3;}
+  .flow-body{flex:1; display:flex; flex-direction:column; padding:8px 24px 28px; color:#eaf3ff; overflow-y:auto;}
+  .flow-body::-webkit-scrollbar{display:none;}
+  .step{display:none; flex:1; flex-direction:column; animation:fade .4s ease;}
+  .step.active{display:flex;}
+  .close-x{position:absolute; top:42px; right:22px; z-index:40; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; border:none; font-size:16px; cursor:pointer;}
+  .flow h2{font-size:23px; margin:14px 0 4px; color:#fff;}
+  .flow .muted{color:#9fc0e6; font-size:13.5px; margin:0 0 22px; line-height:1.5;}
+
+  .pick{display:flex; flex-direction:column; gap:12px; margin-top:6px;}
+  .pick button{display:flex; align-items:center; gap:14px; padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#eaf3ff; font-size:16px; font-weight:600; cursor:pointer; transition:.2s;}
+  .pick button:hover{background:rgba(45,212,191,.16); border-color:var(--teal);}
+  .pick .emoji{font-size:24px;}
+
+  .slider-wrap{margin-top:26px;}
+  .slider-wrap label{font-size:13px; color:#9fc0e6;}
+  input[type=range]{width:100%; margin:14px 0 6px; accent-color:var(--teal);}
+  .ival{font-size:46px; font-weight:800; color:var(--teal); text-align:center;}
+  .scaleends{display:flex; justify-content:space-between; font-size:11px; color:#7e9ec4;}
+
+  .btn{margin-top:auto; background:var(--teal); color:#04221d; border:none; border-radius:15px; padding:16px; font-size:16px; font-weight:800; cursor:pointer;}
+  .btn.ghost{background:rgba(255,255,255,.10); color:#eaf3ff; border:1px solid rgba(255,255,255,.18); margin-top:12px;}
+  .btn.sand{background:var(--sand); color:#6b4f1d;}
+
+  /* wave breathing screen */
+  .wavebox{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;}
+  .ring{width:210px; height:210px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative;}
+  .breath{width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 50% 40%, rgba(109,240,219,.9), rgba(45,212,191,.35)); box-shadow:0 0 50px rgba(45,212,191,.5); animation:breathe 10s ease-in-out infinite;}
+  @keyframes breathe{0%{transform:scale(.62);} 40%{transform:scale(1.18);} 50%{transform:scale(1.18);} 90%{transform:scale(.62);} 100%{transform:scale(.62);}}
+  .breath-label{position:absolute; font-size:15px; font-weight:700; color:#04221d;}
+  .timer{font-size:15px; color:#bcd6f3; margin-top:8px; letter-spacing:.5px;}
+  .reassure{color:#cfe2ff; font-size:15px; text-align:center; line-height:1.55; margin:18px 8px 0; min-height:66px;}
+  .wave-svg{position:absolute; bottom:0; left:0; right:0; width:100%; height:120px; opacity:.5;}
+
+  .actions-grid{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:8px;}
+  .qa{background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:15px; padding:15px 10px; text-align:center; cursor:pointer; color:#eaf3ff; transition:.2s;}
+  .qa:hover{background:rgba(45,212,191,.15); border-color:var(--teal);}
+  .qa .e{font-size:26px; display:block; margin-bottom:7px;}
+  .qa .t{font-size:12.5px; font-weight:600;}
+  .qa.done{background:rgba(45,212,191,.22); border-color:var(--teal);}
+
+  /* anchor card inside flow */
+  .anchor-card{background:linear-gradient(160deg,#f7ead0,#efd9ad); border-radius:22px; padding:22px; color:#5c4318; text-align:center; box-shadow:0 14px 30px rgba(0,0,0,.3);}
+  .anchor-card .photo{width:96px; height:96px; border-radius:50%; margin:4px auto 14px; background:linear-gradient(135deg,#c9a24a,#8a6520); display:flex; align-items:center; justify-content:center; font-size:42px;}
+  .anchor-card blockquote{font-size:17px; font-weight:700; line-height:1.45; margin:0 0 14px; color:#4a3712;}
+  .anchor-card .from{font-size:12px; color:#8a6f3c;}
+  .anchor-mini{display:flex; gap:10px; margin-top:16px;}
+  .anchor-mini div{flex:1; background:rgba(255,255,255,.45); border-radius:12px; padding:10px; text-align:center;}
+  .anchor-mini b{display:block; font-size:18px; color:#5c4318;}
+  .anchor-mini span{font-size:10px; color:#8a6f3c;}
+
+  .outcome{display:flex; flex-direction:column; gap:12px; margin-top:14px;}
+  .outcome button{padding:16px; border-radius:15px; border:none; font-size:15px; font-weight:700; cursor:pointer; text-align:left; display:flex; align-items:center; gap:12px;}
+  .o-good{background:var(--teal); color:#04221d;}
+  .o-mid{background:rgba(245,230,202,.95); color:#6b4f1d;}
+  .o-slip{background:rgba(255,255,255,.10); color:#eaf3ff; border:1px solid rgba(255,255,255,.2);}
+
+  .done-screen{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 10px;}
+  .done-screen .big{font-size:60px; margin-bottom:8px;}
+  .done-screen h2{font-size:26px;}
+  .done-screen p{color:#bcd6f3; font-size:14px; line-height:1.55;}
+
+  /* INSIGHTS */
+  .light .statusbar{color:var(--navy);}
+  .heat{display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:6px;}
+  .heat div{aspect-ratio:1; border-radius:4px;}
+  .legend{display:flex; align-items:center; gap:6px; font-size:10px; color:#9aa9bd; margin-top:8px;}
+  .legend i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .bar{height:9px; border-radius:6px; background:#e7eef5; overflow:hidden; margin:7px 0 2px;}
+  .bar i{display:block; height:100%; background:linear-gradient(90deg,#2DD4BF,#1c8f80); border-radius:6px;}
+  .trigtag{display:flex; justify-content:space-between; font-size:12.5px; color:#54657a; margin-top:9px;}
+  .winrate{font-size:40px; font-weight:800; color:var(--teal-dim);}
+  .savings{display:flex; gap:10px; margin-top:4px;}
+  .savings .s{flex:1; background:#0B1F3A; color:#eaf3ff; border-radius:14px; padding:13px; text-align:center;}
+  .savings .s b{display:block; font-size:19px; color:var(--teal);}
+  .savings .s span{font-size:10px; color:#a9c6e8;}
+
+  /* ANCHOR tab */
+  .reason-row{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #eef2f7; font-size:13.5px; color:#3f5066;}
+  .reason-row .dot{width:8px; height:8px; border-radius:50%; background:var(--teal); flex:0 0 auto;}
+  .person{display:flex; align-items:center; gap:12px; padding:11px; background:#fff; border-radius:14px; margin-bottom:10px; box-shadow:0 4px 12px rgba(13,40,80,.05);}
+  .person .av{width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#2DD4BF,#1c8f80); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700;}
+  .person .meta b{display:block; font-size:13.5px; color:var(--navy);} .person .meta span{font-size:11px; color:#9aa9bd;}
+  .person button{margin-left:auto; background:#eef7f5; color:var(--teal-dim); border:none; border-radius:10px; padding:8px 12px; font-size:11px; font-weight:700; cursor:pointer;}
+
+  .pillbar{display:flex; gap:7px; margin:2px 0 14px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:6px 11px; border-radius:20px; background:#eef3f8; color:#5e6f84; font-weight:600;}
+  .pill.on{background:var(--teal); color:#04221d;}
+
+  .hint{font-size:12px; color:#8aa0bd; text-align:center; margin-top:14px; max-width:330px;}
+  .note{font-size:11.5px; color:#7e93b0; max-width:560px; text-align:center; margin:26px auto 0; line-height:1.6;}
+  .label-top{font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#7e9ec4; margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div class="lead">
+  <h1>Tide</h1>
+  <p>Cravings come in like waves. Tide helps you ride them out. — tap the green button to try the in-the-moment flow.</p>
+</div>
+
+<div class="stage">
+  <!-- ============ PHONE 1 : main app ============ -->
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+
+      <!-- HOME -->
+      <div class="view active home" id="v-home">
+        <div class="statusbar"><span>9:41</span><span>tide ▴ 87%</span></div>
+        <div class="home-inner">
+          <div class="greet" style="width:100%">
+            <div class="hi">Tuesday evening, Andrei</div>
+            <div class="day">You've got this.</div>
+          </div>
+          <div class="urge-wrap">
+            <button class="urge-btn" onclick="startFlow()">I feel the urge<small>tap & breathe with me</small></button>
+            <div class="urge-cap">Open this the second a craving hits. No judgment, just ten minutes together.</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><b>14</b><span>waves ridden</span></div>
+            <div class="stat"><b>6 days</b><span>calm streak</span></div>
+            <div class="stat"><b>£128</b><span>saved</span></div>
+          </div>
+          <button class="plan-link" onclick="go('v-insights')">🌙 Evenings are usually tough — plan for tonight<span>›</span></button>
+        </div>
+        <div class="tabs">
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Home</div>
+          <div class="tab" onclick="go('v-insights')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-3"/></svg>Insights</div>
+          <div class="tab" onclick="go('v-anchor')"><svg viewBox="0 0 24 24"><path d="M12 3v18M12 7a4 4 0 100-8M5 13a7 7 0 0014 0"/></svg>Anchor</div>
+        </div>
+      </div>
+
+      <!-- INSIGHTS -->
+      <div class="view light" id="v-insights" style="background:var(--soft)">
+        <div class="statusbar"><span>9:41</span><span>tide ▴ 87%</span></div>
+        <div class="scroll">
+          <h2 class="sc">Your patterns</h2>
+          <p class="sub">Built quietly from the moments you've ridden out.</p>
+
+          <div class="card">
+            <h3>Win rate</h3>
+            <div class="winrate">79%</div>
+            <p>of urges ridden out this month — up from 61% in April.</p>
+          </div>
+
+          <div class="card">
+            <h3>When urges hit</h3>
+            <div class="heat" id="heat"></div>
+            <div class="legend"><span>Mon</span><i style="background:#e7eef5"></i><i style="background:#bfe9e2"></i><i style="background:#6fd9c9"></i><i style="background:#2DD4BF"></i><i style="background:#1c8f80"></i><span>9–11pm peaks</span></div>
+          </div>
+
+          <div class="card">
+            <h3>What sets them off</h3>
+            <div class="trigtag"><span>Stress / after work</span><span>41%</span></div>
+            <div class="bar"><i style="width:41%"></i></div>
+            <div class="trigtag"><span>Boredom in the evening</span><span>28%</span></div>
+            <div class="bar"><i style="width:28%"></i></div>
+            <div class="trigtag"><span>Social / others doing it</span><span>19%</span></div>
+            <div class="bar"><i style="width:19%"></i></div>
+            <div class="trigtag"><span>After a meal</span><span>12%</span></div>
+            <div class="bar"><i style="width:12%"></i></div>
+          </div>
+
+          <div class="card">
+            <h3>What actually helps you</h3>
+            <p style="margin-bottom:8px">Ranked by how often it ended in riding the wave out:</p>
+            <div class="trigtag"><span>🚶 60-second walk</span><span>88%</span></div>
+            <div class="bar"><i style="width:88%"></i></div>
+            <div class="trigtag"><span>💧 Glass of water</span><span>74%</span></div>
+            <div class="bar"><i style="width:74%"></i></div>
+            <div class="trigtag"><span>💬 Texting Sam</span><span>69%</span></div>
+            <div class="bar"><i style="width:69%"></i></div>
+          </div>
+
+          <div class="card">
+            <h3>What you've kept</h3>
+            <div class="savings">
+              <div class="s"><b>£128</b><span>not spent</span></div>
+              <div class="s"><b>42</b><span>cigs skipped</span></div>
+              <div class="s"><b>19</b><span>drinks passed</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab" onclick="go('v-home')"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Home</div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-3"/></svg>Insights</div>
+          <div class="tab" onclick="go('v-anchor')"><svg viewBox="0 0 24 24"><path d="M12 3v18M12 7a4 4 0 100-8M5 13a7 7 0 0014 0"/></svg>Anchor</div>
+        </div>
+      </div>
+
+      <!-- ANCHOR -->
+      <div class="view light" id="v-anchor" style="background:var(--soft)">
+        <div class="statusbar"><span>9:41</span><span>tide ▴ 87%</span></div>
+        <div class="scroll">
+          <h2 class="sc">Your anchor</h2>
+          <p class="sub">The why, for when the wanting gets loud.</p>
+
+          <div class="pillbar">
+            <span class="pill on">All</span><span class="pill">🍔 Food</span><span class="pill">🍷 Drink</span><span class="pill">🚬 Smoke</span>
+          </div>
+
+          <div class="card">
+            <h3>Why I'm doing this</h3>
+            <div class="reason-row"><span class="dot"></span>I want to wake up without that fog.</div>
+            <div class="reason-row"><span class="dot"></span>To be around for the kids at 70.</div>
+            <div class="reason-row"><span class="dot"></span>I'm tired of money going up in smoke.</div>
+            <div class="reason-row" style="border:none"><span class="dot"></span>I want to prove to myself I can.</div>
+          </div>
+
+          <div class="card" style="background:linear-gradient(160deg,#f7ead0,#efd9ad)">
+            <h3 style="color:#5c4318">A note from a strong day</h3>
+            <p style="color:#6b4f1d; font-style:italic">"Future me — if you're reading this mid-craving, you already know it passes. Drink some water, go outside, and you'll be so glad in twenty minutes that you didn't. I'm proud of you. — May 2nd"</p>
+          </div>
+
+          <div class="card">
+            <h3>My anchor people</h3>
+            <p style="margin-bottom:10px">One tap during a tough moment sends a pre-written "having a hard time" text.</p>
+            <div class="person"><div class="av">S</div><div class="meta"><b>Sam</b><span>Best friend</span></div><button>Text</button></div>
+            <div class="person" style="margin-bottom:0"><div class="av">M</div><div class="meta"><b>Mum</b><span>Always picks up</span></div><button>Text</button></div>
+          </div>
+
+          <div class="card">
+            <h3>My if-then plans</h3>
+            <p>If I get the <b>after-dinner smoke urge</b> → brush teeth + start a podcast.</p>
+            <p style="margin-top:8px">If I want a <b>drink after a stressful day</b> → fizzy water + 10-min walk first.</p>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab" onclick="go('v-home')"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Home</div>
+          <div class="tab" onclick="go('v-insights')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-3"/></svg>Insights</div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M12 3v18M12 7a4 4 0 100-8M5 13a7 7 0 0014 0"/></svg>Anchor</div>
+        </div>
+      </div>
+
+      <!-- ===== URGE FLOW (overlays) ===== -->
+      <div class="view flow" id="v-flow">
+        <button class="close-x" onclick="go('v-home')">✕</button>
+        <div class="statusbar"><span>9:41</span><span>tide</span></div>
+        <div class="flow-body">
+
+          <!-- step 1: name it -->
+          <div class="step active" id="s1">
+            <div class="label-top">Step 1 of 4</div>
+            <h2>What are you feeling pulled toward?</h2>
+            <p class="muted">Just name it. That's the whole ask for now.</p>
+            <div class="pick">
+              <button onclick="setHabit('Food','🍔'); next('s1','s1b')"><span class="emoji">🍔</span> Food / snacking</button>
+              <button onclick="setHabit('a drink','🍷'); next('s1','s1b')"><span class="emoji">🍷</span> A drink</button>
+              <button onclick="setHabit('a cigarette','🚬'); next('s1','s1b')"><span class="emoji">🚬</span> Cigarette / vape</button>
+            </div>
+          </div>
+
+          <!-- step 1b: intensity -->
+          <div class="step" id="s1b">
+            <div class="label-top">Step 1 of 4</div>
+            <h2>How strong is it right now?</h2>
+            <p class="muted">No right answer. We just want a before-and-after.</p>
+            <div class="ival" id="ival">7</div>
+            <div class="slider-wrap">
+              <input type="range" min="1" max="10" value="7" id="islider" oninput="document.getElementById('ival').textContent=this.value">
+              <div class="scaleends"><span>a whisper</span><span>overwhelming</span></div>
+            </div>
+            <button class="btn" onclick="next('s1b','s2'); startWave()">Ride it out with me →</button>
+          </div>
+
+          <!-- step 2: wave -->
+          <div class="step" id="s2">
+            <div class="label-top">Step 2 of 4 · breathe</div>
+            <div class="wavebox">
+              <div class="ring"><div class="breath"></div><div class="breath-label" id="breathLabel">breathe in</div></div>
+              <div class="timer" id="timer">the wave usually crests in ~3 min</div>
+              <div class="reassure" id="reassure">This feeling will rise, peak, and pass — whether or not you act on it. You don't have to do anything but watch it move.</div>
+              <svg class="wave-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+                <path id="wavePath" fill="rgba(45,212,191,0.4)" d="M0,80 Q50,60 100,80 T200,80 T300,80 T400,80 V120 H0 Z"/>
+              </svg>
+            </div>
+            <button class="btn ghost" onclick="next('s2','s3')">Give me something to do</button>
+            <button class="btn" onclick="next('s2','s4')">I'm steadier — keep going →</button>
+          </div>
+
+          <!-- step 3: actions -->
+          <div class="step" id="s3">
+            <div class="label-top">Step 3 · do something</div>
+            <h2 id="actTitle">Quick things that help</h2>
+            <p class="muted">Pick one. Tested against your own history — the walk works best for you.</p>
+            <div class="actions-grid">
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">💧</span><span class="t">Glass of water</span></div>
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">🚶</span><span class="t">60-sec walk</span></div>
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">💬</span><span class="t">Text Sam</span></div>
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">🪥</span><span class="t">Brush teeth</span></div>
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">🎮</span><span class="t">2-min game</span></div>
+              <div class="qa" onclick="this.classList.toggle('done')"><span class="e">🫁</span><span class="t">10 deep breaths</span></div>
+            </div>
+            <button class="btn" onclick="next('s3','s4')">Done →</button>
+          </div>
+
+          <!-- step 4: anchor -->
+          <div class="step" id="s4">
+            <div class="label-top">Step 4 · remember why</div>
+            <div class="anchor-card">
+              <div class="photo">👨‍👧</div>
+              <blockquote>"To be around for the kids at 70."</blockquote>
+              <div class="from">— your reason, in your words</div>
+              <div class="anchor-mini">
+                <div><b>£128</b><span>saved so far</span></div>
+                <div><b>6 days</b><span>going strong</span></div>
+              </div>
+            </div>
+            <button class="btn sand" style="margin-top:22px" onclick="next('s4','s5')">I made it through →</button>
+            <button class="btn ghost" onclick="next('s4','s5')">It's still rough</button>
+          </div>
+
+          <!-- step 5: close loop -->
+          <div class="step" id="s5">
+            <div class="label-top">Last step · how'd it go?</div>
+            <h2>How did that go?</h2>
+            <p class="muted">Honest answers make your insights smarter. No wrong answer here.</p>
+            <div class="outcome">
+              <button class="o-good" onclick="finish('good')">🌊 I rode it out</button>
+              <button class="o-mid" onclick="finish('mid')">🤏 Gave in a little</button>
+              <button class="o-slip" onclick="finish('slip')">💙 I gave in — and that's okay</button>
+            </div>
+          </div>
+
+          <!-- done -->
+          <div class="step" id="sdone">
+            <div class="done-screen">
+              <div class="big" id="doneEmoji">🌊</div>
+              <h2 id="doneTitle">That's one more wave ridden.</h2>
+              <p id="doneText">It crested and it passed — just like it always will. Logged quietly. Go be proud of yourself.</p>
+              <button class="btn" style="margin-top:26px; width:100%" onclick="go('v-home')">Back home</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ side caption phone : the moment ============ -->
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="view active flow" style="background:linear-gradient(180deg,#081428,#0c2547 60%,#103b6b)">
+        <div class="statusbar"><span>11:02</span><span>tide</span></div>
+        <div class="flow-body" style="justify-content:center">
+          <div style="text-align:center; color:#eaf3ff">
+            <div style="font-size:54px; margin-bottom:10px">🌙</div>
+            <h2 style="font-size:22px; margin:0 0 10px">The whole app, in one idea</h2>
+            <p class="muted" style="margin-bottom:20px">It's 11pm. The craving hits. Instead of willpower alone, you reach into your pocket and tap one button.</p>
+            <div style="text-align:left; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:16px; font-size:13px; line-height:1.9; color:#cfe2ff">
+              <div>1️⃣ &nbsp;Name it &amp; rate it — 5 seconds</div>
+              <div>2️⃣ &nbsp;Watch the wave rise &amp; fall while you breathe</div>
+              <div>3️⃣ &nbsp;Tap a quick action that works for you</div>
+              <div>4️⃣ &nbsp;See your reason, in your own words</div>
+              <div>5️⃣ &nbsp;Close the loop — no shame either way</div>
+            </div>
+            <p class="muted" style="margin-top:20px; font-size:12.5px">Everything else — insights, streaks, savings — fills in automatically from these moments. You never have to "remember to log."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Interactive concept prototype for <b>Tide</b>. Tap the green <b>“I feel the urge”</b> button to walk the full in-the-moment flow; use the bottom tab bar to explore Insights and Anchor. Covers eating, drinking, and smoking with one shared engine. Pairs with <b>Tide_Design_Doc.md</b>.</p>
+
+<script>
+  function go(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id==='v-home') resetFlow();
+    stopWave();
+  }
+  function startFlow(){ resetFlow(); go('v-flow'); }
+  function next(from,to){
+    document.getElementById(from).classList.remove('active');
+    document.getElementById(to).classList.add('active');
+    if(to!=='s2') stopWave();
+  }
+  function resetFlow(){
+    ['s1b','s2','s3','s4','s5','sdone'].forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById('s1').classList.add('active');
+    document.querySelectorAll('.qa').forEach(q=>q.classList.remove('done'));
+    document.getElementById('islider').value=7; document.getElementById('ival').textContent='7';
+  }
+  let habit='it';
+  function setHabit(name,emoji){
+    habit=name;
+    document.getElementById('actTitle').textContent = 'Quick things instead of '+name;
+  }
+
+  // wave + breathing timer
+  let waveTimer=null, sec=0;
+  const phases=[
+    {t:0, label:'breathe in'},
+    {t:4, label:'hold'},
+    {t:5, label:'breathe out'},
+  ];
+  const reassures=[
+    "This feeling will rise, peak, and pass — whether or not you act on it. You don't have to do anything but watch it move.",
+    "Notice where you feel it in your body. You're not fighting it. You're just letting it be there.",
+    "Cravings are loudest right before they fade. You're near the top of the wave now.",
+    "Feel that? It's already starting to soften. You're doing the hard part by just staying.",
+    "Almost through. Every second you wait, it loses a little more of its grip."
+  ];
+  function startWave(){
+    sec=0; stopWave();
+    waveTimer=setInterval(()=>{
+      sec++;
+      const phase = (sec%10);
+      const lbl = phase<4 ? 'breathe in' : (phase<5?'hold':'breathe out');
+      document.getElementById('breathLabel').textContent = lbl;
+      const remain = Math.max(0,180-sec);
+      const m=Math.floor(remain/60), s=remain%60;
+      document.getElementById('timer').textContent = remain>0
+        ? `riding the wave · ${m}:${s.toString().padStart(2,'0')} left`
+        : 'the wave has passed 🌊';
+      const idx = Math.min(reassures.length-1, Math.floor(sec/20));
+      document.getElementById('reassure').textContent = reassures[idx];
+    },1000);
+  }
+  function stopWave(){ if(waveTimer){clearInterval(waveTimer); waveTimer=null;} }
+
+  function finish(kind){
+    const e=document.getElementById('doneEmoji'), t=document.getElementById('doneTitle'), p=document.getElementById('doneText');
+    if(kind==='good'){ e.textContent='🌊'; t.textContent="That's one more wave ridden."; p.textContent="It crested and it passed — just like it always will. Logged quietly. Go be proud of yourself."; }
+    else if(kind==='mid'){ e.textContent='🌤️'; t.textContent="You slowed it down — that counts."; p.textContent="A little is not the same as a lot. You stayed aware the whole time, and that's the muscle we're building."; }
+    else { e.textContent='💙'; t.textContent="Okay. That happened."; p.textContent="It doesn't erase your 6 days or your reasons. Want to note what set it off? It'll make tomorrow's urge easier to spot."; }
+    next('s5','sdone'); stopWave();
+  }
+
+  // build heatmap
+  const heat=document.getElementById('heat');
+  const cols=['#e7eef5','#bfe9e2','#6fd9c9','#2DD4BF','#1c8f80'];
+  for(let i=0;i<56;i++){
+    const d=document.createElement('div');
+    let lvl=Math.floor(Math.random()*3);
+    // bias evenings (every 7th-ish col bottom rows) toward hot
+    if(i%7>=5) lvl=3+Math.floor(Math.random()*2);
+    d.style.background=cols[lvl];
+    heat.appendChild(d);
+  }
+</script>
+</body>
+</html>

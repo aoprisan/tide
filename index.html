@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>Tide — ride the urge out</title>
+<meta name="description" content="A pocket companion for the moment a craving peaks. One calm button runs a guided session to help you ride the wave out.">
+<meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tide">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ============ ONBOARDING ============ -->
+  <section class="view onboard active" id="v-onboard">
+    <div class="ob-inner">
+      <div class="ob-step active" id="ob1">
+        <div class="ob-mark"><span class="drop"></span></div>
+        <h1>Tide</h1>
+        <p class="ob-tag">Cravings come in like waves.<br>Tide helps you ride them out.</p>
+        <p class="ob-body">When an urge hits, you reach for one calm button. It holds your hand for about ten minutes while the wave crests and passes. No login. No judgment.</p>
+        <button class="btn" onclick="ob('ob1','ob2')">Get started</button>
+        <button class="btn link" onclick="seedAndExplore()">Just exploring? Load a sample</button>
+      </div>
+
+      <div class="ob-step" id="ob2">
+        <div class="label-top">A 60-second setup</div>
+        <h2>What are you working on?</h2>
+        <p class="ob-body">Pick any that fit. You can change these later. One engine handles all three.</p>
+        <div class="pick" id="ob-habits">
+          <button type="button" data-habit="food"><span class="emoji">🍔</span> Food / snacking</button>
+          <button type="button" data-habit="drink"><span class="emoji">🍷</span> Alcohol</button>
+          <button type="button" data-habit="smoke"><span class="emoji">🚬</span> Smoking / vaping</button>
+        </div>
+        <button class="btn" id="ob2next" onclick="ob('ob2','ob3')" disabled>Next</button>
+      </div>
+
+      <div class="ob-step" id="ob3">
+        <div class="label-top">Almost there</div>
+        <h2>What should we call you?</h2>
+        <p class="ob-body">Optional — just so the app feels a little less like a stranger.</p>
+        <input class="text-input" id="ob-name" type="text" placeholder="Your name (optional)" autocomplete="given-name">
+        <h3 class="ob-sub">One reason you're doing this</h3>
+        <p class="ob-body">We'll show this back to you mid-craving, in your own words.</p>
+        <input class="text-input" id="ob-reason" type="text" placeholder="e.g. To wake up without that fog">
+        <button class="btn" onclick="finishOnboarding()">Take me in</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOME ============ -->
+  <section class="view home" id="v-home">
+    <div class="home-inner">
+      <div class="greet">
+        <div class="hi" id="greet-when">Welcome</div>
+        <div class="day" id="greet-line">You've got this.</div>
+      </div>
+      <div class="urge-wrap">
+        <button class="urge-btn" onclick="startFlow()">I feel the urge<small>tap &amp; breathe with me</small></button>
+        <div class="urge-cap">Open this the second a craving hits. No judgment, just ten minutes together.</div>
+      </div>
+      <div class="stat-row" id="home-stats"></div>
+      <button class="plan-link" id="home-plan" onclick="go('v-anchor')">🌙 <span>Set up your reasons for a tough moment</span><span class="chev">›</span></button>
+    </div>
+    <nav class="tabs" data-tab="home"></nav>
+  </section>
+
+  <!-- ============ INSIGHTS ============ -->
+  <section class="view light" id="v-insights">
+    <div class="scroll">
+      <h2 class="sc">Your patterns</h2>
+      <p class="sub">Built quietly from the moments you've ridden out.</p>
+      <div id="insights-body"></div>
+    </div>
+    <nav class="tabs" data-tab="insights"></nav>
+  </section>
+
+  <!-- ============ ANCHOR ============ -->
+  <section class="view light" id="v-anchor">
+    <div class="scroll">
+      <h2 class="sc">Your anchor</h2>
+      <p class="sub">The why, for when the wanting gets loud.</p>
+      <div id="anchor-body"></div>
+    </div>
+    <nav class="tabs" data-tab="anchor"></nav>
+  </section>
+
+  <!-- ============ URGE FLOW ============ -->
+  <section class="view flow" id="v-flow">
+    <button class="close-x" onclick="confirmClose()">✕</button>
+    <div class="flow-body">
+
+      <div class="step active" id="s1">
+        <div class="label-top">Step 1 · name it</div>
+        <h2>What are you feeling pulled toward?</h2>
+        <p class="muted">Just name it. That's the whole ask for now.</p>
+        <div class="pick" id="flow-habits"></div>
+      </div>
+
+      <div class="step" id="s1b">
+        <div class="label-top">Step 1 · name it</div>
+        <h2>How strong is it right now?</h2>
+        <p class="muted">No right answer. We just want a before-and-after.</p>
+        <div class="ival" id="ival">7</div>
+        <div class="slider-wrap">
+          <input type="range" min="1" max="10" value="7" id="islider">
+          <div class="scaleends"><span>a whisper</span><span>overwhelming</span></div>
+        </div>
+        <button class="btn" onclick="next('s1b','s2'); startWave()">Ride it out with me →</button>
+      </div>
+
+      <div class="step" id="s2">
+        <div class="label-top">Step 2 · breathe</div>
+        <div class="wavebox">
+          <div class="ring"><div class="breath" id="breath"></div><div class="breath-label" id="breathLabel">breathe in</div></div>
+          <div class="timer" id="timer">the wave usually crests in ~3 min</div>
+          <div class="reassure" id="reassure">This feeling will rise, peak, and pass — whether or not you act on it. You don't have to do anything but watch it move.</div>
+          <svg class="wave-svg" id="waveSvg" viewBox="0 0 400 120" preserveAspectRatio="none">
+            <path id="wavePath" fill="rgba(45,212,191,0.4)" d="M0,80 Q50,60 100,80 T200,80 T300,80 T400,80 V120 H0 Z"/>
+          </svg>
+        </div>
+        <button class="btn ghost" onclick="next('s2','s3')">Give me something to do</button>
+        <button class="btn" onclick="next('s2','s4')">I'm steadier — keep going →</button>
+      </div>
+
+      <div class="step" id="s3">
+        <div class="label-top">Step 3 · do something</div>
+        <h2 id="actTitle">Quick things that help</h2>
+        <p class="muted" id="actHint">Pick whatever you'll actually do. We'll learn which ones work for you.</p>
+        <div class="actions-grid" id="actions-grid"></div>
+        <button class="btn" onclick="next('s3','s4')">Done →</button>
+      </div>
+
+      <div class="step" id="s4">
+        <div class="label-top">Step 4 · remember why</div>
+        <div class="anchor-card" id="flow-anchor"></div>
+        <button class="btn sand" style="margin-top:22px" onclick="next('s4','s5')">I made it through →</button>
+        <button class="btn ghost" onclick="next('s4','s5')">It's still rough</button>
+      </div>
+
+      <div class="step" id="s5">
+        <div class="label-top">Last step · how'd it go?</div>
+        <h2>How did that go?</h2>
+        <p class="muted">Honest answers make your insights smarter. No wrong answer here.</p>
+        <div class="outcome">
+          <button class="o-good" onclick="setOutcome('good')">🌊 I rode it out</button>
+          <button class="o-mid" onclick="setOutcome('mid')">🤏 Gave in a little</button>
+          <button class="o-slip" onclick="setOutcome('slip')">💙 I gave in — and that's okay</button>
+        </div>
+      </div>
+
+      <div class="step" id="s5b">
+        <div class="label-top">One last thing (skippable)</div>
+        <h2 id="reflectTitle">What set it off?</h2>
+        <p class="muted">Naming the cue is how Tide learns your patterns. Tap any that fit.</p>
+        <div class="chips" id="trigger-chips"></div>
+        <div class="slider-wrap" style="margin-top:22px">
+          <label>Where's the urge now?</label>
+          <div class="ival" id="aval" style="font-size:34px">4</div>
+          <input type="range" min="1" max="10" value="4" id="aslider">
+          <div class="scaleends"><span>gone quiet</span><span>still loud</span></div>
+        </div>
+        <button class="btn" onclick="logSession()">Save &amp; finish</button>
+      </div>
+
+      <div class="step" id="sdone">
+        <div class="done-screen">
+          <div class="big" id="doneEmoji">🌊</div>
+          <h2 id="doneTitle">That's one more wave ridden.</h2>
+          <p id="doneText">It crested and it passed — just like it always will. Logged quietly. Go be proud of yourself.</p>
+          <button class="btn" style="margin-top:26px; width:100%" onclick="go('v-home')">Back home</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- install banner -->
+  <div class="install-banner" id="install-banner">
+    <span>Add Tide to your home screen so it's one tap away.</span>
+    <button id="install-btn">Install</button>
+    <button id="install-dismiss" aria-label="Dismiss">✕</button>
+  </div>
+
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "Tide — ride the urge out",
+  "short_name": "Tide",
+  "description": "A pocket companion for the moment a craving peaks. One calm button runs a guided session to help you ride the wave out.",
+  "start_url": ".",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1F3A",
+  "theme_color": "#0B1F3A",
+  "categories": ["health", "lifestyle", "medical"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ride the wave",
+      "short_name": "Ride a wave",
+      "description": "Open the in-the-moment session right away",
+      "url": "./?action=ride",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
