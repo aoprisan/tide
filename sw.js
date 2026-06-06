@@ -1,6 +1,6 @@
 // Tide service worker — offline-first app shell.
 // Bump CACHE when shell assets change so clients pick up the new version.
-const CACHE = 'tide-v1';
+const CACHE = 'tide-v2';
 
 const ASSETS = [
   './',
@@ -8,6 +8,9 @@ const ASSETS = [
   './css/styles.css',
   './js/app.js',
   './manifest.webmanifest',
+  './fonts/fraunces.woff2',
+  './fonts/fraunces-italic.woff2',
+  './fonts/hanken.woff2',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',

@@ -87,8 +87,20 @@ function go(id){
   if (id === 'v-home')     renderHome();
   if (id === 'v-insights') renderInsights();
   if (id === 'v-anchor')   renderAnchor();
+  // keep the URL hash in sync for bookmarkable tabs + browser back
+  const h = VIEW_HASH[id];
+  if (h && location.hash !== '#' + h) history.replaceState(null, '', '#' + h);
 }
 window.go = go;
+
+const VIEW_HASH = { 'v-home': 'home', 'v-insights': 'insights', 'v-anchor': 'anchor' };
+const HASH_VIEW = { home: 'v-home', insights: 'v-insights', anchor: 'v-anchor' };
+function routeHash(){
+  if (!state.onboarded) return;
+  const h = location.hash.replace('#', '');
+  if (h === 'ride'){ startFlow(); return; }
+  if (HASH_VIEW[h]) go(HASH_VIEW[h]);
+}
 
 function renderTabs(){
   document.querySelectorAll('.tabs').forEach(nav => {
@@ -154,10 +166,11 @@ function renderHome(){
     "One wave at a time.";
 
   const m = money();
+  const cs = calmStreak();
   el('home-stats').innerHTML = `
-    <div class="stat"><b>${ridden}</b><span>waves ridden</span></div>
-    <div class="stat"><b>${calmStreak()}${calmStreak() === 1 ? ' day' : ' days'}</b><span>calm streak</span></div>
-    <div class="stat"><b>£${m}</b><span>saved</span></div>`;
+    <div class="stat glass"><b>${ridden}</b><span>WAVES RIDDEN</span></div>
+    <div class="stat glass"><b>${cs}</b><span>DAY${cs === 1 ? '' : 'S'} CALM</span></div>
+    <div class="stat glass"><b>£${m}</b><span>SAVED</span></div>`;
 
   const plan = el('home-plan');
   if (state.plans.length){
@@ -218,8 +231,8 @@ function calmStreak(){
  * Insights
  * ------------------------------------------------------------------ */
 function heatColor(count, max){
-  if (!count) return '#e7eef5';
-  const cols = ['#bfe9e2', '#6fd9c9', '#2DD4BF', '#1c8f80'];
+  if (!count) return 'rgba(120,180,220,.08)';
+  const cols = ['#1a5b56', '#1f9d8d', '#2DD4BF', '#8cfbed'];
   const r = count / max;
   const i = Math.min(cols.length - 1, Math.floor(r * cols.length));
   return cols[i];
@@ -231,7 +244,7 @@ function renderInsights(){
 
   if (total < 1){
     body.innerHTML = `
-      <div class="card"><div class="empty">
+      <div class="card glass"><div class="empty">
         Nothing to show just yet.<br><br>
         Every time you ride a wave out, Tide quietly learns when your urges hit,
         what sets them off, and what actually helps — and shows it back to you here.
@@ -244,7 +257,7 @@ function renderInsights(){
 
   // win rate
   const wr = winRate();
-  html += `<div class="card">
+  html += `<div class="card glass">
       <h3>Win rate</h3>
       <div class="winrate">${wr}%</div>
       <p>of ${total} urge${total === 1 ? '' : 's'} ridden out (didn't fully give in).</p>
@@ -270,11 +283,11 @@ function renderInsights(){
     heat += '</div></div>';
   }
   heat += `<div class="heat-axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div></div>`;
-  html += `<div class="card">
+  html += `<div class="card glass">
       <h3>When urges hit</h3>
       ${heat}
       <div class="legend"><span>cooler</span>
-        <i style="background:#e7eef5"></i><i style="background:#bfe9e2"></i><i style="background:#6fd9c9"></i><i style="background:#2DD4BF"></i><i style="background:#1c8f80"></i>
+        <i style="background:rgba(120,180,220,.10)"></i><i style="background:#1a5b56"></i><i style="background:#1f9d8d"></i><i style="background:#2DD4BF"></i><i style="background:#8cfbed"></i>
         <span>your hot spots</span></div>
     </div>`;
 
@@ -286,7 +299,7 @@ function renderInsights(){
   }
   if (trigTotal){
     const top = Object.entries(trigCount).sort((a, b) => b[1] - a[1]).slice(0, 4);
-    html += `<div class="card"><h3>What sets them off</h3>` +
+    html += `<div class="card glass"><h3>What sets them off</h3>` +
       top.map(([t, n]) => {
         const pct = Math.round((n / trigTotal) * 100);
         return `<div class="trigtag"><span>${t}</span><span>${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div>`;
@@ -303,7 +316,7 @@ function renderInsights(){
   }
   help.sort((x, y) => y.rate - x.rate || y.n - x.n);
   if (help.length){
-    html += `<div class="card"><h3>What actually helps you</h3>
+    html += `<div class="card glass"><h3>What actually helps you</h3>
       <p style="margin-bottom:8px">Ranked by how often it ended in riding the wave out:</p>` +
       help.slice(0, 4).map(h =>
         `<div class="trigtag"><span>${h.a.e} ${h.a.t}</span><span>${h.rate}%</span></div><div class="bar"><i style="width:${h.rate}%"></i></div>`
@@ -315,7 +328,7 @@ function renderInsights(){
     const H = HABITS[k];
     return `<div class="s"><b>${tallyFor(k)}</b><span>${H.tally}</span></div>`;
   }).join('');
-  html += `<div class="card"><h3>What you've kept</h3>
+  html += `<div class="card glass"><h3>What you've kept</h3>
       <div class="savings">
         <div class="s"><b>£${money()}</b><span>not spent</span></div>
         ${cells}
@@ -354,8 +367,8 @@ function renderAnchor(){
 
   const plans = state.plans.filter(p => anchorFilter === 'all' || p.habit === 'all' || p.habit === anchorFilter);
   const planRows = plans.length
-    ? plans.map(p => `<p style="margin-top:8px">${escapeHtml(p.text)}
-        <button class="del" onclick="delPlan('${p.id}')" style="background:none;border:none;color:#c2ccd8;cursor:pointer;font-size:15px">×</button></p>`).join('')
+    ? plans.map(p => `<div class="plan-item"><span class="dot" style="margin-top:7px"></span>${escapeHtml(p.text)}
+        <button class="del" onclick="delPlan('${p.id}')" aria-label="Remove">×</button></div>`).join('')
     : `<div class="empty">An "if-then" plan beats an in-the-moment decision. Add one below.</div>`;
 
   body.innerHTML = `
@@ -364,7 +377,7 @@ function renderAnchor(){
       ${habitPills}
     </div>
 
-    <div class="card">
+    <div class="card glass">
       <h3>Why I'm doing this</h3>
       ${reasonRows}
       <div class="add-row">
@@ -373,13 +386,13 @@ function renderAnchor(){
       </div>
     </div>
 
-    <div class="card" style="background:linear-gradient(160deg,#f7ead0,#efd9ad)">
-      <h3 style="color:#5c4318">A note from a strong day</h3>
+    <div class="card warm">
+      <h3>A note from a strong day</h3>
       <textarea class="note-area" id="note-area" placeholder="Write to your future self, for when the wanting gets loud…">${escapeHtml(state.note)}</textarea>
       <div class="save-hint" id="note-hint">Saved automatically.</div>
     </div>
 
-    <div class="card">
+    <div class="card glass">
       <h3>My anchor people</h3>
       ${peopleRows}
       <div class="add-row"><input class="text-input" id="person-name" type="text" placeholder="Name"></div>
@@ -389,7 +402,7 @@ function renderAnchor(){
       </div>
     </div>
 
-    <div class="card">
+    <div class="card glass">
       <h3>My if-then plans</h3>
       ${planRows}
       <div class="add-row">
@@ -517,24 +530,39 @@ function renderFlowAnchor(){
     </div>`;
 }
 
-/* wave + breathing pacer */
-let waveTimer = null, sec = 0;
+/* wave + breathing pacer — also swells the background canvas with the breath */
+let waveTimer = null, sec = 0, lastReassure = -1;
 function startWave(){
   renderFlowAnchor(); // prep step 4 content
-  sec = 0; stopWave();
+  sec = 0; lastReassure = -1; stopWave();
+  Waves.setAmp(2.4);
   waveTimer = setInterval(() => {
     sec++;
     const phase = sec % 10;
     el('breathLabel').textContent = phase < 4 ? 'breathe in' : (phase < 5 ? 'hold' : 'breathe out');
+    // swell the sea with the breath: rise on inhale/hold, recede on exhale
+    const swell = phase < 4 ? (phase / 4) : phase < 5 ? 1 : (1 - (phase - 5) / 5);
+    Waves.setAmp(1.5 + swell * 1.8);
+
     const remain = Math.max(0, 180 - sec);
     const m = Math.floor(remain / 60), s = remain % 60;
     el('timer').textContent = remain > 0
       ? `riding the wave · ${m}:${s.toString().padStart(2, '0')} left`
-      : 'the wave has passed 🌊';
-    el('reassure').textContent = REASSURES[Math.min(REASSURES.length - 1, Math.floor(sec / 20))];
+      : 'the wave has passed';
+
+    const idx = Math.min(REASSURES.length - 1, Math.floor(sec / 20));
+    if (idx !== lastReassure){
+      lastReassure = idx;
+      const r = el('reassure');
+      r.style.opacity = '0';
+      setTimeout(() => { r.textContent = REASSURES[idx]; r.style.opacity = '1'; }, 350);
+    }
   }, 1000);
 }
-function stopWave(){ if (waveTimer){ clearInterval(waveTimer); waveTimer = null; } }
+function stopWave(){
+  if (waveTimer){ clearInterval(waveTimer); waveTimer = null; }
+  Waves.setAmp(1);
+}
 window.startWave = startWave;
 
 function setOutcome(kind){
@@ -649,6 +677,113 @@ function seedAndExplore(){
 window.seedAndExplore = seedAndExplore;
 
 /* ------------------------------------------------------------------ *
+ * The living wave — a canvas of layered tides + bioluminescent glints
+ * that breathes behind every screen. Amplitude swells with the breath
+ * during a session (see startWave).
+ * ------------------------------------------------------------------ */
+const Waves = (() => {
+  let cvs, ctx, w, h, dpr = 1, t = 0, amp = 1, ampTarget = 1, raf = null, glints = [];
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // three stacked tides: [depth fraction, wavelength, speed, height, color]
+  const layers = [
+    { y: 0.66, len: 1.1, spd: 0.10, h: 16, col: 'rgba(45,212,191,0.10)' },
+    { y: 0.76, len: 1.6, spd: 0.07, h: 22, col: 'rgba(45,212,191,0.13)' },
+    { y: 0.87, len: 0.8, spd: 0.13, h: 14, col: 'rgba(108,240,219,0.10)' },
+  ];
+
+  function resize(){
+    const r = cvs.getBoundingClientRect();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    w = r.width; h = r.height;
+    cvs.width = w * dpr; cvs.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    glints = Array.from({ length: 16 }, (_, i) => ({
+      x: ((i * 53) % 100) / 100 * w,
+      y: h * (0.4 + ((i * 37) % 60) / 100),
+      r: 0.8 + ((i * 13) % 18) / 10,
+      sp: 0.06 + ((i * 7) % 10) / 60,
+      ph: (i * 41) % 100 / 100 * Math.PI * 2,
+    }));
+  }
+
+  function wave(L, time){
+    const base = h * L.y;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    ctx.lineTo(0, base);
+    for (let x = 0; x <= w; x += 8){
+      const k = (x / w) * Math.PI * 2 * (1 / L.len) * 2.4;
+      const y = base + Math.sin(k + time * L.spd) * L.h * amp
+                     + Math.sin(k * 0.5 - time * L.spd * 0.7) * L.h * 0.35 * amp;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fillStyle = L.col;
+    ctx.fill();
+  }
+
+  function crestLine(L, time){
+    const base = h * L.y;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += 8){
+      const k = (x / w) * Math.PI * 2 * (1 / L.len) * 2.4;
+      const y = base + Math.sin(k + time * L.spd) * L.h * amp
+                     + Math.sin(k * 0.5 - time * L.spd * 0.7) * L.h * 0.35 * amp;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(140,251,237,0.18)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  function frame(){
+    t += 1;
+    amp += (ampTarget - amp) * 0.04;
+    ctx.clearRect(0, 0, w, h);
+
+    // deep glow from below
+    const g = ctx.createRadialGradient(w / 2, h * 1.05, h * 0.1, w / 2, h * 1.05, h * 0.9);
+    g.addColorStop(0, 'rgba(45,212,191,0.10)');
+    g.addColorStop(1, 'rgba(45,212,191,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+
+    // glints drift up and twinkle
+    for (const p of glints){
+      p.y -= p.sp; p.ph += 0.04;
+      if (p.y < h * 0.32){ p.y = h * 0.98; }
+      const a = (0.25 + 0.25 * Math.sin(p.ph)) * Math.min(1, amp);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(140,251,237,${a})`;
+      ctx.shadowColor = 'rgba(108,240,219,0.8)'; ctx.shadowBlur = 8;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    for (const L of layers){ wave(L, t); crestLine(L, t); }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start(){
+    cvs = document.getElementById('deep');
+    if (!cvs) return;
+    ctx = cvs.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+    if (reduce){ amp = 1; ampTarget = 1; ctx.clearRect(0,0,w,h); for (const L of layers){ wave(L, 0); crestLine(L, 0); } return; }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden){ if (raf){ cancelAnimationFrame(raf); raf = null; } }
+      else if (!raf){ raf = requestAnimationFrame(frame); }
+    });
+    raf = requestAnimationFrame(frame);
+  }
+
+  return { start, setAmp: (v) => { ampTarget = v; } };
+})();
+
+/* ------------------------------------------------------------------ *
  * Install prompt
  * ------------------------------------------------------------------ */
 let deferredPrompt = null;
@@ -687,6 +822,7 @@ function wireInstall(){
  * Init
  * ------------------------------------------------------------------ */
 function init(){
+  Waves.start();
   renderTabs();
   wireOnboarding();
   renderFlowHabits();
@@ -696,9 +832,12 @@ function init(){
   el('aslider').addEventListener('input', function(){ el('aval').textContent = this.value; });
 
   if (state.onboarded){
+    const startHash = location.hash.replace('#', '');  // capture before go() rewrites it
     go('v-home');
+    window.addEventListener('hashchange', routeHash);
     const params = new URLSearchParams(location.search);
-    if (params.get('action') === 'ride') startFlow();
+    if (params.get('action') === 'ride' || startHash === 'ride') startFlow();
+    else if (HASH_VIEW[startHash]) go(HASH_VIEW[startHash]);
   } else {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     el('v-onboard').classList.add('active');

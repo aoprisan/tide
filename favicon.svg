@@ -1,15 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#16335c"/>
-      <stop offset="1" stop-color="#081326"/>
-    </linearGradient>
-    <radialGradient id="drop" cx="50%" cy="40%" r="60%">
-      <stop offset="0" stop-color="#6df0db"/>
-      <stop offset="1" stop-color="#1aa492"/>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#123a63"/>
+      <stop offset="1" stop-color="#04101e"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="50%" cy="38%" r="62%">
+      <stop offset="0" stop-color="#8cfbed"/>
+      <stop offset="55%" stop-color="#2DD4BF"/>
+      <stop offset="1" stop-color="#168274"/>
     </radialGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <path d="M0 42 Q16 36 32 42 T64 42 V64 H0 Z" fill="#1aa492" opacity="0.5"/>
-  <circle cx="32" cy="29" r="16" fill="url(#drop)"/>
+  <circle cx="32" cy="29" r="22" fill="#2DD4BF" opacity="0.18"/>
+  <path d="M0 44 Q16 38 32 43 T64 42 V64 H0 Z" fill="#168274" opacity="0.45"/>
+  <path d="M0 44 Q16 38 32 43 T64 42" fill="none" stroke="#6df0db" stroke-width="1.4" opacity="0.7"/>
+  <circle cx="32" cy="28" r="15" fill="url(#orb)"/>
 </svg>
